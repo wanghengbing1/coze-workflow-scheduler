@@ -52,22 +52,47 @@
 4. 选择你 Fork 的 GitHub 仓库
 
 ### 步骤 4：配置环境变量
-在 Zeabur 控制台中，进入项目设置，添加以下环境变量：
 
-#### 必需环境变量
-| 变量名 | 值 | 说明 |
-|--------|----|------|
-| `COZE_API_TOKEN` | 你的 API Token | 从 Coze 平台获取 |
-| `COZE_WORKFLOW_ID` | 你的工作流 ID | 从 Coze 平台获取 |
+#### Docker环境变量支持
+项目在Docker容器中支持以下环境变量，已在Dockerfile中完整配置：
 
-#### 可选环境变量
-| 变量名 | 值 | 说明 | 示例 |
-|--------|----|------|------|
-| `COZE_API_BASE` | API基础地址 | 默认：`https://api.coze.cn` | `https://api.coze.cn` |
-| `SCHEDULE_CONFIG` | 定时配置 | 默认：`daily:18:00` | `daily:14:30` |
-| `SCHEDULE_TIMEZONE` | 时区 | 默认：`UTC` | `Asia/Shanghai` |
-| `MAX_RETRIES` | 最大重试次数 | 默认：`5` | `3` |
-| `RETRY_DELAY` | 重试间隔（秒） | 默认：`60` | `30` |
+##### 必需环境变量
+| 变量名 | 说明 | 示例 |
+|--------|------|------|
+| `COZE_API_TOKEN` | Coze API 令牌（必需） | `cztei_xxx...` |
+| `COZE_WORKFLOW_ID` | 工作流 ID（必需） | `756925844681878738` |
+
+##### 可选环境变量
+| 变量名 | 说明 | 默认值 | 示例 |
+|--------|------|--------|------|
+| `COZE_API_BASE` | API 基础地址 | `https://api.coze.cn` | `https://api.coze.cn` |
+| `SCHEDULE_CONFIG` | 定时配置 | `daily:18:00` | `daily:14:30` |
+| `SCHEDULE_TIMEZONE` | 时区设置 | `UTC` | `Asia/Shanghai` |
+| `MAX_RETRIES` | 最大重试次数 | `5` | `3` |
+| `RETRY_DELAY` | 重试间隔（秒） | `60` | `30` |
+
+#### Zeabur部署配置
+在 Zeabur 控制台中，进入项目设置，添加环境变量：
+
+**生产环境配置示例：**
+```bash
+COZE_API_TOKEN=your_api_token_here
+COZE_WORKFLOW_ID=756925844681878738
+SCHEDULE_CONFIG=daily:18:00
+SCHEDULE_TIMEZONE=UTC
+MAX_RETRIES=5
+RETRY_DELAY=60
+```
+
+**开发环境配置示例：**
+```bash
+COZE_API_TOKEN=your_api_token_here
+COZE_WORKFLOW_ID=756925844681878738
+SCHEDULE_CONFIG=interval:300  # 每5分钟测试
+SCHEDULE_TIMEZONE=UTC
+MAX_RETRIES=3
+RETRY_DELAY=30
+```
 
 #### 定时配置示例
 ```bash

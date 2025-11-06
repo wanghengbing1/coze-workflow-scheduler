@@ -83,7 +83,21 @@ python wewerss.py
 docker build -t coze-workflow-scheduler .
 ```
 
-### 2. 运行容器
+### 2. 运行容器（完整环境变量）
+```bash
+docker run -d \
+  -e COZE_API_TOKEN="your_api_token_here" \
+  -e COZE_WORKFLOW_ID="your_workflow_id" \
+  -e COZE_API_BASE="https://api.coze.cn" \
+  -e SCHEDULE_CONFIG="daily:18:00" \
+  -e SCHEDULE_TIMEZONE="UTC" \
+  -e MAX_RETRIES="5" \
+  -e RETRY_DELAY="60" \
+  --name coze-scheduler \
+  coze-workflow-scheduler
+```
+
+### 3. 运行容器（最小配置）
 ```bash
 docker run -d \
   -e COZE_API_TOKEN="your_api_token_here" \
