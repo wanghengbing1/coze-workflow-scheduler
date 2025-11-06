@@ -1,0 +1,65 @@
+{
+  "name": "coze-workflow-scheduler",
+  "description": "Automated Coze workflow scheduler with retry mechanism",
+  "icon": "🤖",
+  "template": {
+    "env": [
+      {
+        "name": "COZE_API_TOKEN",
+        "description": "Your Coze API token for authentication",
+        "required": true,
+        "default": ""
+      },
+      {
+        "name": "COZE_WORKFLOW_ID",
+        "description": "The ID of your Coze workflow",
+        "required": true,
+        "default": ""
+      },
+      {
+        "name": "COZE_API_BASE",
+        "description": "Coze API base URL",
+        "required": false,
+        "default": "https://api.coze.cn"
+      },
+      {
+        "name": "SCHEDULE_CONFIG",
+        "description": "Schedule configuration (e.g., daily:18:00, cron:0 18 * * *, interval:3600, hourly:30, weekly:monday:18:00, monthly:15:18:00)",
+        "required": false,
+        "default": "daily:18:00"
+      },
+      {
+        "name": "SCHEDULE_TIMEZONE",
+        "description": "Schedule timezone (e.g., UTC, Asia/Shanghai)",
+        "required": false,
+        "default": "UTC"
+      },
+      {
+        "name": "MAX_RETRIES",
+        "description": "Maximum number of retry attempts",
+        "required": false,
+        "default": "5"
+      },
+      {
+        "name": "RETRY_DELAY",
+        "description": "Delay in seconds between retry attempts",
+        "required": false,
+        "default": "60"
+      }
+    ],
+    "ports": [
+      {
+        "port": 8080,
+        "type": "HTTP"
+      }
+    ]
+  },
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "runtime": {
+    "type": "docker",
+    "command": ["python", "wewerss.py"]
+  }
+}
