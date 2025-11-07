@@ -18,7 +18,7 @@
 | `COZE_WORKFLOW_ID` | 工作流 ID | ✅ | `7569258446818755555` |
 | `COZE_API_BASE` | API 基础地址 | ❌ | `https://api.coze.cn` |
 | `SCHEDULE_CONFIG` | 定时配置（支持多种格式） | ❌ | `daily:18:00` |
-| `SCHEDULE_TIMEZONE` | 时区设置 | ❌ | `UTC` |
+| `SCHEDULE_TIMEZONE` | 时区设置 | ❌ | `CST` |
 | `MAX_RETRIES` | 最大重试次数 | ❌ | `5` |
 | `RETRY_DELAY` | 重试间隔（秒） | ❌ | `60` |
 
