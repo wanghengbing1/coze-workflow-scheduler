@@ -45,6 +45,24 @@
         "description": "Delay in seconds between retry attempts",
         "required": false,
         "default": "60"
+      },
+      {
+        "name": "REQUEST_TIMEOUT",
+        "description": "Request timeout in seconds for API calls",
+        "required": false,
+        "default": "30"
+      },
+      {
+        "name": "REQUEST_RETRY_BACKOFF",
+        "description": "Backoff multiplier for retry delays",
+        "required": false,
+        "default": "2.0"
+      },
+      {
+        "name": "MAX_CONCURRENT_REQUESTS",
+        "description": "Maximum number of concurrent API requests",
+        "required": false,
+        "default": "3"
       }
     ],
     "ports": [

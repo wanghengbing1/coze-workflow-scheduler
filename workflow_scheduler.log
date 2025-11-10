@@ -218,3 +218,40 @@
 2025-11-06 19:21:21,767 - httpx - INFO - HTTP Request: POST https://api.coze.cn/v1/workflow/run "HTTP/1.1 401 Unauthorized"
 2025-11-06 19:21:21,768 - __main__ - ERROR - Coze API error on attempt 2: code: 4100, msg: authentication is invalid, logid: 2025110619212105F44A9CF122292745E2
 2025-11-06 19:21:21,768 - __main__ - INFO - Retrying in 60 seconds...
+2025-11-10 13:14:37,706 - wewerss - ERROR - COZE_API_TOKEN environment variable is required
+2025-11-10 13:15:06,588 - wewerss - ERROR - COZE_API_TOKEN environment variable is required
+2025-11-10 13:16:24,314 - wewerss - INFO - Test mode detected, skipping Coze client initialization
+2025-11-10 13:16:24,314 - wewerss - INFO - Received signal 15, initiating graceful shutdown...
+2025-11-10 13:16:24,314 - wewerss - INFO - Received signal 2, initiating graceful shutdown...
+2025-11-10 13:16:46,010 - wewerss - INFO - Test mode detected, skipping Coze client initialization
+2025-11-10 13:16:46,010 - wewerss - INFO - Received signal 15, initiating graceful shutdown...
+2025-11-10 13:16:46,010 - wewerss - INFO - Received signal 2, initiating graceful shutdown...
+2025-11-10 13:16:46,011 - wewerss - INFO - Attempting to run workflow (attempt 1/2)
+2025-11-10 13:16:46,011 - wewerss - ERROR - Coze API error on attempt 1: code=6039, msg=code: 6039, msg: This requests do not support interruption, logid: None
+2025-11-10 13:16:46,011 - wewerss - ERROR - Request interruption not supported - this request cannot be cancelled
+2025-11-10 13:16:46,011 - wewerss - INFO - Retrying in 0.2 seconds...
+2025-11-10 13:16:47,013 - wewerss - INFO - Attempting to run workflow (attempt 2/2)
+2025-11-10 13:16:47,014 - wewerss - ERROR - Coze API error on attempt 2: code=6039, msg=code: 6039, msg: This requests do not support interruption, logid: None
+2025-11-10 13:16:47,014 - wewerss - ERROR - Request interruption not supported - this request cannot be cancelled
+2025-11-10 13:16:47,014 - wewerss - ERROR - Max retries reached. Workflow execution failed.
+2025-11-10 13:16:47,015 - wewerss - INFO - Attempting to run workflow (attempt 1/5)
+2025-11-10 13:16:47,016 - wewerss - ERROR - Coze API error on attempt 1: code=500, msg=code: 500, msg: Server error, logid: None
+2025-11-10 13:16:47,016 - wewerss - ERROR - Server error - using exponential backoff
+2025-11-10 13:16:47,016 - wewerss - INFO - Retrying in 1 seconds...
+2025-11-10 13:16:48,020 - wewerss - WARNING - Shutdown requested, stopping retry attempts
+2025-11-10 13:18:17,779 - wewerss - INFO - Test mode detected, skipping Coze client initialization
+2025-11-10 13:18:17,779 - wewerss - INFO - Received signal 15, initiating graceful shutdown...
+2025-11-10 13:18:17,779 - wewerss - INFO - Received signal 2, initiating graceful shutdown...
+2025-11-10 13:18:17,780 - wewerss - INFO - Attempting to run workflow (attempt 1/2)
+2025-11-10 13:18:17,780 - wewerss - ERROR - Coze API error on attempt 1: code=6039, msg=code: 6039, msg: This requests do not support interruption, logid: None
+2025-11-10 13:18:17,780 - wewerss - ERROR - Request interruption not supported - this request cannot be cancelled
+2025-11-10 13:18:17,780 - wewerss - INFO - Retrying in 0.2 seconds...
+2025-11-10 13:18:18,782 - wewerss - INFO - Attempting to run workflow (attempt 2/2)
+2025-11-10 13:18:18,783 - wewerss - ERROR - Coze API error on attempt 2: code=6039, msg=code: 6039, msg: This requests do not support interruption, logid: None
+2025-11-10 13:18:18,783 - wewerss - ERROR - Request interruption not supported - this request cannot be cancelled
+2025-11-10 13:18:18,783 - wewerss - ERROR - Max retries reached. Workflow execution failed.
+2025-11-10 13:18:18,785 - wewerss - INFO - Attempting to run workflow (attempt 1/5)
+2025-11-10 13:18:18,785 - wewerss - ERROR - Coze API error on attempt 1: code=500, msg=code: 500, msg: Server error, logid: None
+2025-11-10 13:18:18,786 - wewerss - ERROR - Server error - using exponential backoff
+2025-11-10 13:18:18,786 - wewerss - INFO - Retrying in 1 seconds...
+2025-11-10 13:18:19,790 - wewerss - WARNING - Shutdown requested, stopping retry attempts

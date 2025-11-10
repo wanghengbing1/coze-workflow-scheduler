@@ -6,9 +6,13 @@ import os
 import time
 import datetime
 import logging
+import signal
+import threading
 from typing import Optional, Dict, Any
 import schedule
 from croniter import croniter
+import requests
+from requests.exceptions import RequestException, Timeout, ConnectionError
 
 # Our official coze sdk for Python [cozepy](https://github.com/coze-dev/coze-py)
 from cozepy import COZE_CN_BASE_URL, CozeAPIError
@@ -24,6 +28,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Global variables for graceful shutdown
+shutdown_event = threading.Event()
+request_lock = threading.Lock()
+active_requests = 0
+
 # Get configuration from environment variables
 coze_api_token = os.getenv('COZE_API_TOKEN', '')
 coze_api_base = os.getenv('COZE_API_BASE', 'https://api.coze.cn')
@@ -31,19 +40,65 @@ workflow_id = os.getenv('COZE_WORKFLOW_ID', '756925844681878738')
 
 # Dynamic scheduling configuration
 SCHEDULE_CONFIG = os.getenv('SCHEDULE_CONFIG', 'daily:18:00')  # 默认每天18:00
-SCHEDULE_TIMEZONE = os.getenv('SCHEDULE_TIMEZONE', 'UTC')  # 默认UTC时区
+SCHEDULE_TIMEZONE = os.getenv('SCHEDULE_TIMEZONE', 'CTS')  # 默认CTS时区
 MAX_RETRIES = int(os.getenv('MAX_RETRIES', '5'))
 RETRY_DELAY = int(os.getenv('RETRY_DELAY', '60'))
 
-# Validate required environment variables
-if not coze_api_token:
+# API request configuration
+REQUEST_TIMEOUT = int(os.getenv('REQUEST_TIMEOUT', '30'))  # 请求超时时间（秒）
+REQUEST_RETRY_BACKOFF = float(os.getenv('REQUEST_RETRY_BACKOFF', '2.0'))  # 退避乘数
+MAX_CONCURRENT_REQUESTS = int(os.getenv('MAX_CONCURRENT_REQUESTS', '3'))  # 最大并发请求数
+
+# Validate required environment variables (skip in test mode)
+if not coze_api_token and os.getenv('TEST_MODE', 'false').lower() != 'true':
     logger.error("COZE_API_TOKEN environment variable is required")
     exit(1)
 
 from cozepy import Coze, TokenAuth, Message, ChatStatus, MessageContentType  # noqa
 
-# Init the Coze client through the access_token.
-coze = Coze(auth=TokenAuth(token=coze_api_token), base_url=coze_api_base)
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+    shutdown_event.set()
+
+# Register signal handlers
+signal.signal(signal.SIGTERM, signal_handler)
+signal.signal(signal.SIGINT, signal_handler)
+
+def is_shutdown_requested():
+    """Check if shutdown has been requested."""
+    return shutdown_event.is_set()
+
+def wait_for_request_slot(timeout=30):
+    """Wait for available request slot with timeout."""
+    start_time = time.time()
+    while active_requests >= MAX_CONCURRENT_REQUESTS:
+        if is_shutdown_requested() or (time.time() - start_time) > timeout:
+            return False
+        time.sleep(0.1)
+    return True
+
+# Init the Coze client through the access_token (delay in test mode)
+def init_coze_client():
+    """Initialize Coze client with proper error handling."""
+    global coze
+    try:
+        if not coze_api_token and os.getenv('TEST_MODE', 'false').lower() == 'true':
+            # In test mode, create a mock client or skip initialization
+            logger.info("Test mode detected, skipping Coze client initialization")
+            return None
+        
+        coze = Coze(auth=TokenAuth(token=coze_api_token), base_url=coze_api_base)
+        return coze
+    except Exception as e:
+        logger.error(f"Failed to initialize Coze client: {e}")
+        if os.getenv('TEST_MODE', 'false').lower() == 'true':
+            return None
+        else:
+            raise
+
+# Initialize client
+coze = init_coze_client()
 
 def parse_schedule_config(config: str) -> Dict[str, Any]:
     """
@@ -211,7 +266,7 @@ def setup_schedule(schedule_config: Dict[str, Any]) -> None:
 
 def run_workflow_with_retry(max_retries: int = MAX_RETRIES, retry_delay: int = RETRY_DELAY) -> Optional[dict]:
     """
-    Run the workflow with retry mechanism.
+    Run the workflow with retry mechanism and interruption support.
     
     Args:
         max_retries: Maximum number of retry attempts
@@ -220,42 +275,164 @@ def run_workflow_with_retry(max_retries: int = MAX_RETRIES, retry_delay: int = R
     Returns:
         Workflow result data if successful, None if all retries failed
     """
-    for attempt in range(max_retries):
-        try:
-            logger.info(f"Attempting to run workflow (attempt {attempt + 1}/{max_retries})")
-            
-            # Call the coze.workflows.runs.create method to create a workflow run
-            workflow = coze.workflows.runs.create(
-                workflow_id=workflow_id,
-            )
-            
-            logger.info(f"Workflow executed successfully: {workflow.data}")
-            return workflow.data
-            
-        except CozeAPIError as e:
-            logger.error(f"Coze API error on attempt {attempt + 1}: {e}")
-            
-            if attempt < max_retries - 1:
-                logger.info(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                logger.error("Max retries reached. Workflow execution failed.")
-                return None
-                
-        except Exception as e:
-            logger.error(f"Unexpected error on attempt {attempt + 1}: {e}")
-            
-            if attempt < max_retries - 1:
-                logger.info(f"Retrying in {retry_delay} seconds...")
-                time.sleep(retry_delay)
-            else:
-                logger.error("Max retries reached. Workflow execution failed.")
-                return None
+    global active_requests
     
-    return None
+    # Check for shutdown request before starting
+    if is_shutdown_requested():
+        logger.warning("Shutdown requested, skipping workflow execution")
+        return None
+    
+    # Wait for available request slot
+    if not wait_for_request_slot():
+        logger.error("Timeout waiting for request slot or shutdown requested")
+        return None
+    
+    with request_lock:
+        if active_requests >= MAX_CONCURRENT_REQUESTS:
+            logger.error("Max concurrent requests reached")
+            return None
+        active_requests += 1
+    
+    try:
+        for attempt in range(max_retries):
+            # Check for shutdown request before each attempt
+            if is_shutdown_requested():
+                logger.warning("Shutdown requested, stopping retry attempts")
+                return None
+            
+            try:
+                logger.info(f"Attempting to run workflow (attempt {attempt + 1}/{max_retries})")
+                
+                # Check if client is available (test mode)
+                if coze is None:
+                    if os.getenv('TEST_MODE', 'false').lower() == 'true':
+                        logger.info("Test mode: simulating successful workflow execution")
+                        return {"test": "success", "data": "mock_workflow_data"}
+                    else:
+                        raise RuntimeError("Coze client not initialized")
+                
+                # Add timeout and interruption support
+                workflow = coze.workflows.runs.create(
+                    workflow_id=workflow_id,
+                    timeout=REQUEST_TIMEOUT,  # Add timeout parameter
+                )
+                
+                logger.info(f"Workflow executed successfully: {workflow.data}")
+                return workflow.data
+                
+            except CozeAPIError as e:
+                error_code = getattr(e, 'code', None)
+                error_msg = str(e)
+                
+                logger.error(f"Coze API error on attempt {attempt + 1}: code={error_code}, msg={error_msg}")
+                
+                # Handle specific error codes
+                if error_code == 6039:
+                    logger.error("Request interruption not supported - this request cannot be cancelled")
+                    # For 6039 errors, wait longer before retry
+                    adjusted_delay = retry_delay * REQUEST_RETRY_BACKOFF * (attempt + 1)
+                elif error_code == 4100:
+                    logger.error("Authentication error - check COZE_API_TOKEN")
+                    # For auth errors, don't retry as frequently
+                    adjusted_delay = retry_delay * 3
+                elif error_code and str(error_code).startswith('5'):
+                    logger.error("Server error - using exponential backoff")
+                    adjusted_delay = retry_delay * (2 ** attempt)
+                else:
+                    adjusted_delay = retry_delay
+                
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {adjusted_delay} seconds...")
+                    
+                    # Sleep with interruption check
+                    sleep_start = time.time()
+                    while time.time() - sleep_start < adjusted_delay:
+                        if is_shutdown_requested():
+                            logger.warning("Shutdown requested during retry delay")
+                            return None
+                        time.sleep(1)  # Check every second
+                else:
+                    logger.error("Max retries reached. Workflow execution failed.")
+                    return None
+                    
+            except (Timeout, ConnectionError, RequestException) as e:
+                logger.error(f"Network error on attempt {attempt + 1}: {e}")
+                
+                if attempt < max_retries - 1:
+                    # Exponential backoff for network errors
+                    adjusted_delay = retry_delay * (2 ** attempt)
+                    logger.info(f"Retrying in {adjusted_delay} seconds...")
+                    
+                    sleep_start = time.time()
+                    while time.time() - sleep_start < adjusted_delay:
+                        if is_shutdown_requested():
+                            logger.warning("Shutdown requested during retry delay")
+                            return None
+                        time.sleep(1)
+                else:
+                    logger.error("Max retries reached. Workflow execution failed.")
+                    return None
+                    
+            except Exception as e:
+                logger.error(f"Unexpected error on attempt {attempt + 1}: {e}")
+                logger.error(f"Error type: {type(e).__name__}")
+                
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {retry_delay} seconds...")
+                    
+                    sleep_start = time.time()
+                    while time.time() - sleep_start < retry_delay:
+                        if is_shutdown_requested():
+                            logger.warning("Shutdown requested during retry delay")
+                            return None
+                        time.sleep(1)
+                else:
+                    logger.error("Max retries reached. Workflow execution failed.")
+                    return None
+        
+        return None
+        
+    finally:
+        with request_lock:
+            active_requests -= 1
+
+def health_check():
+    """Simple health check function."""
+    try:
+        # Check if we can make a simple API call
+        if coze_api_token and workflow_id:
+            return {
+                "status": "healthy",
+                "timestamp": datetime.datetime.now().isoformat(),
+                "active_requests": active_requests,
+                "max_concurrent_requests": MAX_CONCURRENT_REQUESTS,
+                "shutdown_requested": is_shutdown_requested()
+            }
+        else:
+            return {
+                "status": "unhealthy",
+                "error": "Missing required configuration",
+                "timestamp": datetime.datetime.now().isoformat(),
+                "active_requests": active_requests,
+                "max_concurrent_requests": MAX_CONCURRENT_REQUESTS,
+                "shutdown_requested": is_shutdown_requested()
+            }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.datetime.now().isoformat(),
+            "active_requests": active_requests,
+            "max_concurrent_requests": MAX_CONCURRENT_REQUESTS,
+            "shutdown_requested": is_shutdown_requested()
+        }
 
 def scheduled_workflow_job():
     """The scheduled job that runs the workflow."""
+    if is_shutdown_requested():
+        logger.warning("Shutdown requested, skipping scheduled job")
+        return
+    
     logger.info("Starting scheduled workflow execution...")
     
     result = run_workflow_with_retry()
@@ -283,8 +460,11 @@ def check_monthly_schedule(schedule_config: Dict[str, Any]) -> bool:
     return current_time == target_time
 
 def run_scheduler():
-    """Run the scheduler continuously."""
+    """Run the scheduler continuously with interruption support."""
     logger.info("Starting workflow scheduler...")
+    logger.info(f"Request timeout: {REQUEST_TIMEOUT} seconds")
+    logger.info(f"Max concurrent requests: {MAX_CONCURRENT_REQUESTS}")
+    logger.info(f"Retry backoff multiplier: {REQUEST_RETRY_BACKOFF}")
     
     # Parse and setup schedule
     schedule_config = parse_schedule_config(SCHEDULE_CONFIG)
@@ -300,8 +480,21 @@ def run_scheduler():
     scheduled_workflow_job()
     
     # Keep the scheduler running
-    while True:
+    check_interval = 60  # Check every minute
+    last_health_check = time.time()
+    
+    while not is_shutdown_requested():
         try:
+            current_time = time.time()
+            
+            # Periodic health check logging
+            if current_time - last_health_check >= 300:  # Every 5 minutes
+                health_status = health_check()
+                logger.info(f"Health check: {health_status['status']}")
+                if health_status['status'] != 'healthy':
+                    logger.warning(f"Health check issues: {health_status}")
+                last_health_check = current_time
+            
             # Check monthly schedule if configured
             if schedule_config['type'] == 'monthly':
                 if check_monthly_schedule(schedule_config):
@@ -309,19 +502,66 @@ def run_scheduler():
             
             # Run pending scheduled tasks
             schedule.run_pending()
-            time.sleep(60)  # Check every minute
+            
+            # Sleep with interruption support
+            sleep_start = time.time()
+            while time.time() - sleep_start < check_interval:
+                if is_shutdown_requested():
+                    logger.info("Shutdown requested during sleep")
+                    break
+                time.sleep(1)  # Check every second
             
         except KeyboardInterrupt:
             logger.info("Scheduler stopped by user")
             break
         except Exception as e:
             logger.error(f"Scheduler error: {e}")
-            time.sleep(60)  # Wait before retrying
+            logger.error(f"Error type: {type(e).__name__}")
+            
+            # Sleep with interruption support
+            sleep_start = time.time()
+            while time.time() - sleep_start < check_interval:
+                if is_shutdown_requested():
+                    logger.info("Shutdown requested during error recovery")
+                    break
+                time.sleep(1)
+    
+    logger.info("Scheduler shutdown complete")
+
+def cleanup():
+    """Cleanup function to be called on shutdown."""
+    logger.info("Performing cleanup...")
+    
+    # Clear all scheduled jobs
+    schedule.clear()
+    
+    # Wait for active requests to complete
+    max_wait = 30  # Maximum 30 seconds to wait
+    start_time = time.time()
+    
+    while active_requests > 0 and (time.time() - start_time) < max_wait:
+        logger.info(f"Waiting for {active_requests} active requests to complete...")
+        time.sleep(1)
+    
+    if active_requests > 0:
+        logger.warning(f"Force shutdown with {active_requests} active requests remaining")
+    else:
+        logger.info("All active requests completed")
 
 if __name__ == "__main__":
+    logger.info("=== Coze Workflow Scheduler Starting ===")
+    logger.info(f"Python version: {os.sys.version}")
+    logger.info(f"Working directory: {os.getcwd()}")
+    
     try:
         run_scheduler()
     except KeyboardInterrupt:
         logger.info("Scheduler stopped by user")
     except Exception as e:
         logger.error(f"Scheduler crashed: {e}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+    finally:
+        cleanup()
+        logger.info("=== Coze Workflow Scheduler Stopped ===")
