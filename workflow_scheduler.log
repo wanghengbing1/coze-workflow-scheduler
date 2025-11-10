@@ -255,3 +255,61 @@
 2025-11-10 13:18:18,786 - wewerss - ERROR - Server error - using exponential backoff
 2025-11-10 13:18:18,786 - wewerss - INFO - Retrying in 1 seconds...
 2025-11-10 13:18:19,790 - wewerss - WARNING - Shutdown requested, stopping retry attempts
+2025-11-10 13:28:30,310 - wewerss - ERROR - Failed to parse schedule config 'daily03:35': Unsupported schedule type: daily03. Valid types: daily, cron, interval, hourly, weekly, monthly
+2025-11-10 13:28:30,310 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:28:30,310 - wewerss - ERROR - Failed to parse schedule config 'daily18:00': Unsupported schedule type: daily18. Valid types: daily, cron, interval, hourly, weekly, monthly
+2025-11-10 13:28:30,310 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:28:30,310 - wewerss - ERROR - Failed to parse schedule config 'daily00:00': Unsupported schedule type: daily00. Valid types: daily, cron, interval, hourly, weekly, monthly
+2025-11-10 13:28:30,310 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:28:30,310 - wewerss - ERROR - Failed to parse schedule config 'invalid_format': Unsupported schedule type: invalid_format. Valid types: daily, cron, interval, hourly, weekly, monthly
+2025-11-10 13:28:30,310 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:28:30,310 - wewerss - ERROR - Failed to parse schedule config 'daily': Daily format: daily:HH:MM
+2025-11-10 13:28:30,310 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:28:30,311 - wewerss - ERROR - Failed to parse schedule config 'daily:': Daily format: daily:HH:MM
+2025-11-10 13:28:30,311 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:28:30,311 - wewerss - ERROR - Failed to parse schedule config '': Unsupported schedule type: . Valid types: daily, cron, interval, hourly, weekly, monthly
+2025-11-10 13:28:30,311 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:29:16,920 - wewerss - ERROR - Failed to parse schedule config 'daily03:35': Unsupported schedule type: daily03. Valid types: daily, cron, interval, hourly, weekly, monthly
+2025-11-10 13:29:16,921 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:29:16,921 - wewerss - ERROR - Failed to parse schedule config 'daily18:00': Unsupported schedule type: daily18. Valid types: daily, cron, interval, hourly, weekly, monthly
+2025-11-10 13:29:16,921 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:29:16,921 - wewerss - ERROR - Failed to parse schedule config 'daily00:00': Unsupported schedule type: daily00. Valid types: daily, cron, interval, hourly, weekly, monthly
+2025-11-10 13:29:16,921 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:29:16,921 - wewerss - ERROR - Failed to parse schedule config 'invalid_format': Unsupported schedule type: invalid_format. Valid types: daily, cron, interval, hourly, weekly, monthly
+2025-11-10 13:29:16,921 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:29:16,922 - wewerss - ERROR - Failed to parse schedule config 'daily': Daily format: daily:HH:MM
+2025-11-10 13:29:16,922 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:29:16,922 - wewerss - ERROR - Failed to parse schedule config 'daily:': Daily format: daily:HH:MM
+2025-11-10 13:29:16,922 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:29:16,922 - wewerss - ERROR - Failed to parse schedule config '': Unsupported schedule type: . Valid types: daily, cron, interval, hourly, weekly, monthly
+2025-11-10 13:29:16,922 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:30:24,657 - wewerss - ERROR - Failed to parse schedule config 'invalid_format': Invalid format
+2025-11-10 13:30:24,657 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:30:24,657 - wewerss - ERROR - Failed to parse schedule config 'daily': Invalid format
+2025-11-10 13:30:24,657 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:30:24,657 - wewerss - ERROR - Failed to parse schedule config 'daily:': Invalid format
+2025-11-10 13:30:24,657 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:30:24,657 - wewerss - ERROR - Failed to parse schedule config '': Invalid format
+2025-11-10 13:30:24,657 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:32:08,532 - wewerss - ERROR - Failed to parse schedule config 'invalid_format': Invalid format
+2025-11-10 13:32:08,532 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:32:08,532 - wewerss - ERROR - Failed to parse schedule config 'daily': Invalid format
+2025-11-10 13:32:08,532 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:32:08,532 - wewerss - ERROR - Failed to parse schedule config 'daily:': Invalid format
+2025-11-10 13:32:08,533 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:32:08,533 - wewerss - ERROR - Failed to parse schedule config '': Invalid format
+2025-11-10 13:32:08,533 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:33:19,301 - wewerss - ERROR - Failed to parse schedule config 'invalid_format': Invalid format
+2025-11-10 13:33:19,301 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:33:19,301 - wewerss - ERROR - Failed to parse schedule config 'daily': Invalid format
+2025-11-10 13:33:19,301 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:33:19,301 - wewerss - ERROR - Failed to parse schedule config 'daily:': Invalid format
+2025-11-10 13:33:19,302 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:33:19,302 - wewerss - ERROR - Failed to parse schedule config '': Invalid format
+2025-11-10 13:33:19,302 - wewerss - INFO - Using default daily:18:00 schedule
+2025-11-10 13:37:11,422 - wewerss - INFO - Test mode detected, skipping Coze client initialization
+2025-11-10 13:37:11,422 - wewerss - INFO - Attempting to run workflow (attempt 1/1)
+2025-11-10 13:37:11,422 - wewerss - INFO - Test mode: simulating successful workflow execution
+2025-11-10 13:38:28,206 - wewerss - INFO - Test mode detected, skipping Coze client initialization
+2025-11-10 13:38:28,206 - wewerss - INFO - Attempting to run workflow (attempt 1/1)
+2025-11-10 13:38:28,206 - wewerss - INFO - Test mode: simulating successful workflow execution

@@ -8,6 +8,7 @@ import datetime
 import logging
 import signal
 import threading
+import re
 from typing import Optional, Dict, Any
 import schedule
 from croniter import croniter
@@ -102,7 +103,7 @@ coze = init_coze_client()
 
 def parse_schedule_config(config: str) -> Dict[str, Any]:
     """
-    Parse schedule configuration string.
+    Parse schedule configuration string with intelligent format fixing.
     
     Supported formats:
     - daily:HH:MM (e.g., daily:18:00)
@@ -116,8 +117,106 @@ def parse_schedule_config(config: str) -> Dict[str, Any]:
         Dict containing schedule type and parameters
     """
     try:
-        parts = config.split(':')
-        schedule_type = parts[0].lower()
+        # 预处理配置字符串
+        config = config.strip()
+        
+        # 使用正则表达式进行智能格式识别和修复
+        patterns = {
+            'daily': [
+                r'^daily:(\d{1,2}):(\d{2})$',  # daily:HH:MM
+                r'^daily(\d{1,2}):(\d{2})$',   # dailyHH:MM (修复格式)
+            ],
+            'hourly': [
+                r'^hourly:(\d{1,2})$',         # hourly:MM
+            ],
+            'interval': [
+                r'^interval:(\d+)$',           # interval:seconds
+            ],
+            'cron': [
+                r'^cron:(.+)$',                 # cron:expression
+            ],
+            'weekly': [
+                r'^weekly:([a-zA-Z]+):(\d{1,2}):(\d{2})$',  # weekly:day:HH:MM
+            ],
+            'monthly': [
+                r'^monthly:(\d{1,2}):(\d{1,2}):(\d{2})$',   # monthly:day:HH:MM
+            ]
+        }
+        
+        # 尝试匹配和修复格式
+        for schedule_type, pattern_list in patterns.items():
+            for pattern in pattern_list:
+                match = re.match(pattern, config, re.IGNORECASE)
+                if match:
+                    groups = match.groups()
+                    
+                    if schedule_type == 'daily':
+                        if len(groups) == 2:  # daily:HH:MM 或 dailyHH:MM
+                            hour, minute = groups
+                            if int(hour) <= 23 and int(minute) <= 59:
+                                return {
+                                    'type': 'daily',
+                                    'time': f"{hour}:{minute}"
+                                }
+                    
+                    elif schedule_type == 'hourly':
+                        minute = groups[0]
+                        if int(minute) <= 59:
+                            return {
+                                'type': 'hourly',
+                                'minute': int(minute)
+                            }
+                    
+                    elif schedule_type == 'interval':
+                        seconds = int(groups[0])
+                        if seconds >= 60:
+                            return {
+                                'type': 'interval',
+                                'seconds': seconds
+                            }
+                    
+                    elif schedule_type == 'cron':
+                        cron_expr = groups[0].strip()
+                        if croniter.is_valid(cron_expr):
+                            return {
+                                'type': 'cron',
+                                'expression': cron_expr
+                            }
+                    
+                    elif schedule_type == 'weekly':
+                        day, hour, minute = groups
+                        days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+                        if day.lower() in days and int(hour) <= 23 and int(minute) <= 59:
+                            return {
+                                'type': 'weekly',
+                                'day': day.lower(),
+                                'time': f"{hour}:{minute}"
+                            }
+                    
+                    elif schedule_type == 'monthly':
+                        day, hour, minute = groups
+                        if 1 <= int(day) <= 31 and int(hour) <= 23 and int(minute) <= 59:
+                            return {
+                                'type': 'monthly',
+                                'day': int(day),
+                                'time': f"{hour}:{minute}"
+                            }
+        
+        # 如果所有模式都不匹配，记录错误并返回默认值
+        logger.error(f"Failed to parse schedule config '{config}': Invalid format")
+        logger.info("Using default daily:18:00 schedule")
+        return {
+            'type': 'daily',
+            'time': '18:00'
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to parse schedule config '{config}': {e}")
+        logger.info("Using default daily:18:00 schedule")
+        return {
+            'type': 'daily',
+            'time': '18:00'
+        }
         
         if schedule_type == 'daily':
             # daily:HH:MM
@@ -311,11 +410,23 @@ def run_workflow_with_retry(max_retries: int = MAX_RETRIES, retry_delay: int = R
                     else:
                         raise RuntimeError("Coze client not initialized")
                 
-                # Add timeout and interruption support
-                workflow = coze.workflows.runs.create(
-                    workflow_id=workflow_id,
-                    timeout=REQUEST_TIMEOUT,  # Add timeout parameter
-                )
+                # Create workflow run with application-level timeout control
+                import concurrent.futures
+                
+                def create_workflow_with_timeout():
+                    return coze.workflows.runs.create(workflow_id=workflow_id)
+                
+                # Use ThreadPoolExecutor for timeout control
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(create_workflow_with_timeout)
+                    try:
+                        workflow = future.result(timeout=REQUEST_TIMEOUT)
+                    except concurrent.futures.TimeoutError:
+                        logger.error(f"Workflow creation timed out after {REQUEST_TIMEOUT} seconds")
+                        raise TimeoutError(f"Workflow creation timed out after {REQUEST_TIMEOUT} seconds")
+                    except Exception as e:
+                        logger.error(f"Workflow creation failed: {e}")
+                        raise
                 
                 logger.info(f"Workflow executed successfully: {workflow.data}")
                 return workflow.data
@@ -355,8 +466,8 @@ def run_workflow_with_retry(max_retries: int = MAX_RETRIES, retry_delay: int = R
                     logger.error("Max retries reached. Workflow execution failed.")
                     return None
                     
-            except (Timeout, ConnectionError, RequestException) as e:
-                logger.error(f"Network error on attempt {attempt + 1}: {e}")
+            except (Timeout, ConnectionError, RequestException, concurrent.futures.TimeoutError) as e:
+                logger.error(f"Network/timeout error on attempt {attempt + 1}: {e}")
                 
                 if attempt < max_retries - 1:
                     # Exponential backoff for network errors
