@@ -1,0 +1,104 @@
+{
+  "name": "coze-workflow-runner",
+  "description": "Coze 工作流执行器 - 支持定时触发和失败重试",
+  "icon": "🤖",
+  "type": "service",
+  "env": [
+    {
+      "name": "COZE_API_TOKEN",
+      "description": "Coze API 令牌",
+      "required": true,
+      "sensitive": true
+    },
+    {
+      "name": "WORKFLOW_ID",
+      "description": "工作流 ID",
+      "required": true,
+      "default": "7569877408963231763"
+    },
+    {
+      "name": "SCHEDULE_ENABLED",
+      "description": "是否启用定时任务",
+      "required": false,
+      "default": "true"
+    },
+    {
+      "name": "DAILY_TIME",
+      "description": "每天执行时间 (HH:MM 格式)",
+      "required": false,
+      "default": "09:00"
+    },
+    {
+      "name": "TIMEZONE",
+      "description": "时区",
+      "required": false,
+      "default": "Asia/Shanghai"
+    },
+    {
+      "name": "TIMEOUT_SECONDS",
+      "description": "超时时间（秒）",
+      "required": false,
+      "default": "1800"
+    },
+    {
+      "name": "MAX_RETRIES",
+      "description": "最大重试次数",
+      "required": false,
+      "default": "3"
+    },
+    {
+      "name": "RETRY_DELAY_SECONDS",
+      "description": "重试延迟（秒）",
+      "required": false,
+      "default": "60"
+    },
+    {
+      "name": "COZE_BASE_URL",
+      "description": "Coze API 基础 URL",
+      "required": false,
+      "default": "https://api.coze.cn"
+    },
+    {
+      "name": "LOG_LEVEL",
+      "description": "日志级别",
+      "required": false,
+      "default": "INFO"
+    },
+    {
+      "name": "LOG_FILE",
+      "description": "日志文件路径",
+      "required": false,
+      "default": "coze_workflow.log"
+    },
+    {
+      "name": "PORT",
+      "description": "HTTP 服务器端口",
+      "required": false,
+      "default": "8080"
+    }
+  ],
+  "ports": [
+    {
+      "port": 8080,
+      "type": "HTTP",
+      "description": "HTTP 服务端口，用于健康检查和指标"
+    }
+  ],
+  "volumes": [
+    {
+      "path": "/app/logs",
+      "description": "日志文件存储目录"
+    }
+  ],
+  "commands": {
+    "start": "python zeabur_app.py",
+    "test": "python zeabur_app.py --run-once"
+  },
+  "healthCheck": {
+    "path": "/health",
+    "port": 8080,
+    "interval": 30,
+    "timeout": 10,
+    "retries": 3
+  }
+}

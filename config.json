@@ -1,0 +1,21 @@
+{
+  "schedule": {
+    "enabled": true,
+    "daily_time": "09:00",
+    "timezone": "Asia/Shanghai"
+  },
+  "workflow": {
+    "workflow_id": "7569877408963231763",
+    "timeout_seconds": 1800,
+    "max_retries": 3,
+    "retry_delay_seconds": 60
+  },
+  "api": {
+    "token": "sat_OqFBJARUwgHC2wsSwp2c0UVvectsbvQVSrJutIGwjMTNUEmVr7ZSxPZqBwPdKPrt",
+    "base_url": "https://api.coze.cn"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "coze_workflow.log"
+  }
+}
