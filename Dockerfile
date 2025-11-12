@@ -5,7 +5,26 @@ FROM python:3.9-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
-    TZ=Asia/Shanghai
+    TZ=Asia/Shanghai \
+    # Coze API 配置
+    COZE_API_TOKEN="" \
+    WORKFLOW_ID="7569877408963231763" \
+    COZE_BASE_URL="https://api.coze.cn" \
+    # 调度配置
+    SCHEDULE_ENABLED="true" \
+    DAILY_TIME="09:00" \
+    TIMEZONE="Asia/Shanghai" \
+    # 工作流配置
+    TIMEOUT_SECONDS="1800" \
+    MAX_RETRIES="3" \
+    RETRY_DELAY_SECONDS="60" \
+    # 日志配置
+    LOG_LEVEL="INFO" \
+    LOG_FILE="coze_workflow.log" \
+    # 服务配置
+    PORT="8080" \
+    HEALTH_CHECK_PATH="/health" \
+    METRICS_PATH="/metrics"
 
 # 创建非 root 用户（安全最佳实践）
 RUN groupadd -r appuser && useradd -r -g appuser appuser
